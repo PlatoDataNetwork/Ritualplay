@@ -1,5 +1,7 @@
 /node_modules
 /client/node_modules
+/client/build
+/client/dist
 /server/node_modules
 /server/dist
 /server/build
@@ -7,3 +9,6 @@
 /server/src
 /server/test
 /server/test
+.env
+.vercel
+.env*.local

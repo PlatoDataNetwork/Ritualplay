@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "buildCommand": "npm install --prefix client && npm run build --prefix client",
+  "outputDirectory": "client/build",
+  "functions": {
+    "api/index.js": {
+      "runtime": "nodejs20.x"
+    },
+    "api/[...slug].js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api$",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...slug].js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}

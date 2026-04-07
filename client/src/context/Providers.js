@@ -8,6 +8,7 @@ import GlobalStyles from '../styles/Global'
 import { BrowserRouter } from 'react-router-dom'
 import WebSocketProvider from './websocket/WebsocketProvider'
 import GameState from './game/GameState'
+import SolanaWalletProvider from './wallet/SolanaWalletProvider'
 
 const Providers = ({ children }) => (
   <BrowserRouter>
@@ -15,11 +16,13 @@ const Providers = ({ children }) => (
       <GlobalState>
         <ModalProvider>
           <WebSocketProvider>
-            <GameState>
-              <Normalize />
-              <GlobalStyles />
-              {children}
-            </GameState>
+            <SolanaWalletProvider>
+              <GameState>
+                <Normalize />
+                <GlobalStyles />
+                {children}
+              </GameState>
+            </SolanaWalletProvider>
           </WebSocketProvider>
         </ModalProvider>
       </GlobalState>

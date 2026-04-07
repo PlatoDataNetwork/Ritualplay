@@ -19,24 +19,49 @@ const WebSocketProvider = ({ children }) => {
   useEffect(() => {
     window.addEventListener('beforeunload', cleanUp)
     window.addEventListener('beforeclose', cleanUp)
-    return () => cleanUp()
+    return () => {
+      window.removeEventListener('beforeunload', cleanUp)
+      window.removeEventListener('beforeclose', cleanUp)
+      cleanUp()
+    }
     // eslint-disable-next-line
   }, [])
 
   useEffect(() => {
-    socket || connect()
-
-    return () => cleanUp()
+    if (!socket) {
+      reconnect()
+    }
     // eslint-disable-next-line
-  }, [])
+  }, [socket])
 
   function cleanUp() {
-    window.socket && window.socket.emit(CS_DISCONNECT)
-    window.socket && window.socket.close()
+    if (window.socket) {
+      window.socket.emit(CS_DISCONNECT)
+      window.socket.removeAllListeners()
+      window.socket.close()
+      window.socket = null
+    }
+
     setSocket(null)
     setSocketId(null)
+    setChipsAmount(null)
     setPlayers(null)
     setTables(null)
+  }
+
+  function reconnect() {
+    if (window.socket && window.socket.connected) {
+      setSocket(window.socket)
+      return window.socket
+    }
+
+    if (window.socket) {
+      window.socket.removeAllListeners()
+      window.socket.close()
+      window.socket = null
+    }
+
+    return connect()
   }
 
   function connect() {
@@ -52,6 +77,11 @@ const WebSocketProvider = ({ children }) => {
   function registerCallbacks(socket) {
     socket.on('connect', () => {
       setSocket(socket)
+    })
+
+    socket.on('disconnect', () => {
+      setSocket(null)
+      setSocketId(null)
     })
 
     socket.on(SC_RECEIVE_LOBBY_INFO, ({ tables, players, socketId, amount }) => {
@@ -72,7 +102,7 @@ const WebSocketProvider = ({ children }) => {
   }
 
   return (
-    <SocketContext.Provider value={{ socket, socketId, cleanUp }}>
+    <SocketContext.Provider value={{ socket, socketId, cleanUp, reconnect }}>
       {children}
     </SocketContext.Provider>
   )

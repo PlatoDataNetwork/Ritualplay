@@ -5,10 +5,12 @@
         "dev:server": "nodemon ./server",
         "start:backend": "node ./server",
         "start:frontend": "npm install --prefix client && npm start --prefix client",
+        "build:client": "npm run build --prefix client",
         "dev": "npx --yes concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+        "smoke:multiuser": "node ./scripts/multiuser-smoke.js",
         "eject": "react-scripts eject",
-        "prepare": "start /b node server || nohup node server &",
-        "test": "react-scripts test"
+        "prepare": "node -e \"console.log('prepare: no-op')\"",
+        "test": "npm --prefix client test --"
     },
     "private": "true",
     "dependencies": {
@@ -36,6 +38,7 @@
         "concurrently": "^5.3.0",
         "core-js": "^3.6.5",
         "nodemon": "^3.1.4",
-        "raf": "^3.4.1"
+        "raf": "^3.4.1",
+        "socket.io-client": "^2.5.0"
     }
 }

@@ -62,6 +62,78 @@ npm start
 - **Client storage** – Tokens are pushed into Axios’ default headers via `client/src/helpers/setAuthToken.js`. Persist them in `localStorage`/`sessionStorage` from your auth screen and call `setAuthToken(token)` on boot.
 - **Protected routes** – `middleware/auth.js` expects the token in the `x-auth-token` header and injects `req.user`. Use the middleware on any route that needs authenticated identity.
 
+### Runtime Environment
+
+Root `.env` (backend):
+
+- `CPU_MODE=true|false`
+- `CPU_DIFFICULTY=easy|normal|pro`
+
+Client `.env` (inside `client/`):
+
+- `REACT_APP_SERVER_URI=http://localhost:5001` (optional override)
+
+## Vercel Deployment
+
+This repo now includes a root `vercel.json` that makes Vercel serve the React app from `client/build` at `/` instead of serving the Express root route.
+
+What is configured:
+
+- `vercel.json` builds the client with `npm install --prefix client && npm run build --prefix client`
+- `/` and other non-API routes resolve to the React SPA
+- `/api/*` resolves to a Vercel serverless function backed by the Express app
+
+Required Vercel environment variables:
+
+- `REACT_APP_SERVER_URI`
+
+Recommended value:
+
+- If you deploy the backend somewhere else: set `REACT_APP_SERVER_URI` to that public backend URL.
+- If you only want the React site and basic same-origin API handling: you can omit it and the client falls back to the current origin.
+
+Important limitation:
+
+- Vercel does not support long-running Socket.IO game servers in the same way as a persistent Node host.
+- Your poker realtime backend should be deployed to a persistent service such as Railway, Render, Fly.io, EC2, or a VPS.
+- For full gameplay on Vercel frontend, set `REACT_APP_SERVER_URI` to that separate backend URL.
+
+Notes:
+
+- CPU behavior defaults to `normal` when `CPU_DIFFICULTY` is missing or invalid.
+
+## Solana Wallet SDK Setup
+
+The auth page uses Solana Wallet Adapter SDK with built-in wallet selection modal.
+Supported adapters in this project include:
+
+- Phantom
+- Solflare
+
+No WalletConnect project id is required for this flow.
+
+## Multiplayer QA
+
+Run a local multi-user smoke test from repo root:
+
+```bash
+npm run smoke:multiuser
+```
+
+Optional tuning:
+
+```bash
+SMOKE_PLAYERS=5 SMOKE_BUY_IN=1500 SMOKE_DURATION_MS=30000 npm run smoke:multiuser
+```
+
+The script reports:
+
+- table updates received
+- approximate hand starts
+- number of actions sent
+
+It exits with non-zero status if no actions were sent.
+
 ## Contributing Guidelines
 
 ### Pre-PR Checklist
