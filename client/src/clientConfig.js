@@ -4,7 +4,7 @@ const config = {
   contentfulAccessToken: process.env.REACT_APP_CONTENTFUL_ACCESS_TOKEN,
   socketURI:
     process.env.NODE_ENV === 'production'
-      ? process.env.REACT_APP_SERVER_URI
+      ? process.env.REACT_APP_SERVER_URI || window.location.origin
       : `http://${window.location.hostname}:5001/`,
 };
 

@@ -73,6 +73,31 @@ Client `.env` (inside `client/`):
 
 - `REACT_APP_SERVER_URI=http://localhost:5001` (optional override)
 
+## Vercel Deployment
+
+This repo now includes a root `vercel.json` that makes Vercel serve the React app from `client/build` at `/` instead of serving the Express root route.
+
+What is configured:
+
+- `vercel.json` builds the client with `npm install --prefix client && npm run build --prefix client`
+- `/` and other non-API routes resolve to the React SPA
+- `/api/*` resolves to a Vercel serverless function backed by the Express app
+
+Required Vercel environment variables:
+
+- `REACT_APP_SERVER_URI`
+
+Recommended value:
+
+- If you deploy the backend somewhere else: set `REACT_APP_SERVER_URI` to that public backend URL.
+- If you only want the React site and basic same-origin API handling: you can omit it and the client falls back to the current origin.
+
+Important limitation:
+
+- Vercel does not support long-running Socket.IO game servers in the same way as a persistent Node host.
+- Your poker realtime backend should be deployed to a persistent service such as Railway, Render, Fly.io, EC2, or a VPS.
+- For full gameplay on Vercel frontend, set `REACT_APP_SERVER_URI` to that separate backend URL.
+
 Notes:
 
 - CPU behavior defaults to `normal` when `CPU_DIFFICULTY` is missing or invalid.
