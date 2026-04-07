@@ -4,10 +4,10 @@
   "outputDirectory": "client/build",
   "functions": {
     "api/index.js": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs@20.x"
     },
     "api/[...slug].js": {
-      "runtime": "nodejs20.x"
+      "runtime": "nodejs@20.x"
     }
   },
   "routes": [
