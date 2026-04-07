@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useWallet } from '@solana/wallet-adapter-react/lib/cjs'
 import Container from '../components/layout/Container'
 import Button from '../components/buttons/Button'
 import gameContext from '../context/game/gameContext'
 import socketContext from '../context/websocket/socketContext'
 import globalContext from '../context/global/globalContext'
+import setAuthToken from '../helpers/setAuthToken'
 import PokerTable from '../components/game/PokerTable'
 import { RotateDevicePrompt } from '../components/game/RotateDevicePrompt'
 import { PositionedUISlot } from '../components/game/PositionedUISlot'
@@ -20,8 +22,18 @@ import './Play.scss';
 
 const Play = () => {
   const navigate = useNavigate()
-  const { socket } = useContext(socketContext)
-  const { walletAddress } = useContext(globalContext)
+  const { socket, cleanUp } = useContext(socketContext)
+  const {
+    walletAddress,
+    setWalletAddress,
+    setId,
+    setUserName,
+    setEmail,
+    setChipsAmount,
+    setTables,
+    setPlayers,
+  } = useContext(globalContext)
+  const { connected, disconnect } = useWallet()
   const {
     messages,
     currentTable,
@@ -44,6 +56,7 @@ const Play = () => {
   const [depositError, setDepositError] = useState('')
   const [depositNotice, setDepositNotice] = useState('')
   const [isDepositing, setIsDepositing] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
   const pendingDepositRef = React.useRef(0)
   const previousSeatStackRef = React.useRef(null)
 
@@ -107,6 +120,53 @@ const Play = () => {
 
   const handleOpenProfile = () => {
     navigate('/dashboard')
+  }
+
+  const handleLeave = async () => {
+    if (isLeaving) {
+      return
+    }
+
+    setIsLeaving(true)
+
+    // Keep logout focused on auth/session state, while still notifying server table leave.
+    try {
+      leaveTable()
+    } catch (error) {
+      // Continue local cleanup even if leave emit fails.
+    }
+
+    try {
+      cleanUp()
+    } catch (error) {
+      // Continue best-effort cleanup.
+    }
+
+    setAuthToken()
+    setWalletAddress('')
+    setId(null)
+    setUserName(null)
+    setEmail(null)
+    setChipsAmount(null)
+    setTables(null)
+    setPlayers(null)
+
+    localStorage.removeItem('token')
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('x-auth-token')
+    localStorage.removeItem('walletAddress')
+    localStorage.removeItem('user')
+
+    if (connected) {
+      try {
+        await disconnect()
+      } catch (error) {
+        // Ignore wallet adapter disconnect failures during forced logout.
+      }
+    }
+
+    navigate('/')
+    setIsLeaving(false)
   }
 
   const handleDepositOpen = () => {
@@ -177,8 +237,8 @@ const Play = () => {
               scale="0.65"
               style={{ zIndex: '50' }}
             >
-              <Button small secondary onClick={leaveTable}>
-                Leave
+              <Button small secondary onClick={handleLeave} disabled={isLeaving}>
+                {isLeaving ? 'Leaving...' : 'Leave'}
               </Button>
             </PositionedUISlot>
             <PositionedUISlot

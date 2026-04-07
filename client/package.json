@@ -3,10 +3,10 @@
     "private": true,
     "license": "UNLICENSED",
     "dependencies": {
-        "@solana/wallet-adapter-phantom": "0.9.20",
-        "@solana/wallet-adapter-react": "0.15.20",
-        "@solana/wallet-adapter-react-ui": "0.9.18",
-        "@solana/wallet-adapter-solflare": "0.6.20",
+        "@solana/wallet-adapter-phantom": "0.9.12",
+        "@solana/wallet-adapter-react": "0.15.10",
+        "@solana/wallet-adapter-react-ui": "0.9.9",
+        "@solana/wallet-adapter-solflare": "0.6.12",
         "@solana/web3.js": "1.58.0",
         "@testing-library/jest-dom": "^4.2.4",
         "@testing-library/react": "^9.5.0",
@@ -27,6 +27,7 @@
         "zustand": "^4.0.0-rc.0"
     },
     "scripts": {
+        "postinstall": "node scripts/patch-solana-wallet-adapters.js",
         "start": "react-scripts --openssl-legacy-provider start",
         "build": "react-scripts --openssl-legacy-provider build",
         "test": "react-scripts --openssl-legacy-provider test",
@@ -47,5 +48,16 @@
             "last 1 safari version"
         ]
     },
-    "proxy": "http://localhost:5001"
+    "browser": {
+        "@solana/wallet-adapter-base": "@solana/wallet-adapter-base/lib/cjs/index.js",
+        "@solana/wallet-adapter-react": "@solana/wallet-adapter-react/lib/cjs/index.js",
+        "@solana/wallet-adapter-react-ui": "@solana/wallet-adapter-react-ui/lib/cjs/index.js",
+        "@solana/wallet-adapter-phantom": "@solana/wallet-adapter-phantom/lib/cjs/index.js",
+        "@solana/wallet-adapter-solflare": "@solana/wallet-adapter-solflare/lib/cjs/index.js"
+    },
+    "proxy": "http://localhost:5001",
+    "overrides": {
+        "@solana/wallet-adapter-base": "0.9.12",
+        "rpc-websockets": "7.5.0"
+    }
 }

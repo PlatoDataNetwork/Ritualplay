@@ -1,8 +1,8 @@
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import { useWallet } from '@solana/wallet-adapter-react'
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui/lib/cjs'
+import { useWallet } from '@solana/wallet-adapter-react/lib/cjs'
 import globalContext from './../../context/global/globalContext'
 import socketContext from '../../context/websocket/socketContext'
 import { CS_FETCH_LOBBY_INFO } from '../../game/actions'
@@ -89,6 +89,10 @@ const Status = styled.p`
 `
 
 const ButtonWrap = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
   .wallet-adapter-button {
     min-height: 46px;
     border-radius: 12px;
@@ -103,7 +107,7 @@ const ButtonWrap = styled.div`
 
 const ConnectWallet = () => {
   const { setWalletAddress } = useContext(globalContext)
-  const { socket } = useContext(socketContext)
+  const { socket, reconnect } = useContext(socketContext)
   const navigate = useNavigate()
   const location = useLocation()
   const { publicKey, connected, connecting } = useWallet()
@@ -115,6 +119,7 @@ const ConnectWallet = () => {
   useEffect(() => {
     if (!socket) {
       setSocketReady(false)
+      reconnect()
       return
     }
 
@@ -127,7 +132,7 @@ const ConnectWallet = () => {
       socket.off('connect', sync)
       socket.off('disconnect', sync)
     }
-  }, [socket])
+  }, [reconnect, socket])
 
   useEffect(() => {
     if (!socket || !socketReady || !connected || !publicKey) {
