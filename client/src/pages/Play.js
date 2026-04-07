@@ -34,10 +34,18 @@ const Play = () => {
     check,
     call,
     raise,
+    rebuy,
   } = useContext(gameContext)
 
 
   const [bet, setBet] = useState(0)
+  const [showDepositModal, setShowDepositModal] = useState(false)
+  const [depositAmount, setDepositAmount] = useState('1000')
+  const [depositError, setDepositError] = useState('')
+  const [depositNotice, setDepositNotice] = useState('')
+  const [isDepositing, setIsDepositing] = useState(false)
+  const pendingDepositRef = React.useRef(0)
+  const previousSeatStackRef = React.useRef(null)
 
 
   useEffect(() => {
@@ -64,18 +72,100 @@ const Play = () => {
   useEffect(() => {
   }, [currentTable, seatId])
 
+  useEffect(() => {
+    if (!currentTable || !seatId || !currentTable.seats[seatId]) {
+      previousSeatStackRef.current = null
+      return
+    }
+
+    const seat = currentTable.seats[seatId]
+    const currentStack = Number(seat.stack || 0)
+
+    if (
+      isDepositing &&
+      previousSeatStackRef.current !== null &&
+      currentStack > previousSeatStackRef.current
+    ) {
+      setIsDepositing(false)
+      setShowDepositModal(false)
+      setDepositError('')
+      setDepositNotice(`Deposit confirmed. New stack: ${currentStack}`)
+      pendingDepositRef.current = 0
+    }
+
+    previousSeatStackRef.current = currentStack
+  }, [currentTable, seatId, isDepositing])
+
+  useEffect(() => {
+    if (!depositNotice) {
+      return
+    }
+
+    const timer = setTimeout(() => setDepositNotice(''), 8000)
+    return () => clearTimeout(timer)
+  }, [depositNotice])
+
+  const handleOpenProfile = () => {
+    navigate('/dashboard')
+  }
+
+  const handleDepositOpen = () => {
+    if (!currentTable || !seatId || !currentTable.seats[seatId]) {
+      window.alert('Please sit down first to buy chips.')
+      return
+    }
+
+    setDepositAmount('1000')
+    setDepositError('')
+    setShowDepositModal(true)
+  }
+
+  const handleDepositSubmit = () => {
+    if (!currentTable || !seatId || !currentTable.seats[seatId]) {
+      setDepositError('Please sit down first to deposit chips.')
+      return
+    }
+
+    const amount = Number(depositAmount)
+    if (!Number.isFinite(amount)) {
+      setDepositError('Please enter a valid number.')
+      return
+    }
+
+    if (!Number.isInteger(amount)) {
+      setDepositError('Deposit amount must be a whole number.')
+      return
+    }
+
+    if (amount < 100) {
+      setDepositError('Minimum deposit is 100 chips.')
+      return
+    }
+
+    if (amount > 100000) {
+      setDepositError('Maximum deposit per request is 100000 chips.')
+      return
+    }
+
+    setDepositError('')
+    setDepositNotice('Deposit submitted. Waiting for stack sync...')
+    pendingDepositRef.current = amount
+    setIsDepositing(true)
+    rebuy(currentTable.id, seatId, amount)
+  }
+
   return (
     <>
       <RotateDevicePrompt />
       <Container
         fullHeight
         style={{
-          backgroundImage: `url(${background})`,
+          backgroundImage: `radial-gradient(circle at 50% 30%, rgba(2, 123, 98, 0.35), rgba(0, 0, 0, 0.88) 65%), url(${background})`,
           backgroundRepeat: 'no-repeat',
           backgroundSize: 'contain',
           backgroundPosition: 'center center',
           backgroundAttachment: 'fixed',
-          backgroundColor: 'black',
+          backgroundColor: '#05090f',
         }}
         className="play-area"
       >
@@ -91,8 +181,66 @@ const Play = () => {
                 Leave
               </Button>
             </PositionedUISlot>
+            <PositionedUISlot
+              top="2vh"
+              right="1.5rem"
+              scale="0.65"
+              style={{ zIndex: '50', display: 'flex', gap: '0.5rem' }}
+            >
+              <Button small secondary onClick={handleDepositOpen}>
+                Deposit
+              </Button>
+              <Button small secondary onClick={handleOpenProfile}>
+                Profile
+              </Button>
+            </PositionedUISlot>
           </>
         )}
+        {depositNotice && (
+          <PositionedUISlot
+            top="8vh"
+            right="1.5rem"
+            scale="0.6"
+            style={{ zIndex: '55' }}
+          >
+            <InfoPill>{depositNotice}</InfoPill>
+          </PositionedUISlot>
+        )}
+
+        {showDepositModal && (
+          <div className="deposit-modal-backdrop" role="presentation" onClick={() => setShowDepositModal(false)}>
+            <div
+              className="deposit-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Deposit chips"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3>Deposit Chips</h3>
+              <p>Min 100 chips, max 100000 chips per request.</p>
+              <label htmlFor="deposit-amount">Amount</label>
+              <input
+                id="deposit-amount"
+                type="number"
+                min="100"
+                max="100000"
+                step="1"
+                value={depositAmount}
+                onChange={(event) => setDepositAmount(event.target.value)}
+              />
+              {depositError && <div className="deposit-error">{depositError}</div>}
+              <div className="deposit-actions">
+                <Button small secondary onClick={() => setShowDepositModal(false)}>
+                  Cancel
+                </Button>
+                <Button small onClick={handleDepositSubmit} disabled={isDepositing}>
+                  {isDepositing ? 'Pending...' : 'Confirm Deposit'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <PokerTableWrapper>
           <PokerTable />
           {currentTable && (

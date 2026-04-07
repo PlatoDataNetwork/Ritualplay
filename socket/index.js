@@ -38,12 +38,54 @@ const tables = {
 };
 
 const players = {};
+const cpuActionTimers = {};
+
+const CPU_MODE_ENABLED = process.env.CPU_MODE !== 'false';
+const CPU_DIFFICULTY = (process.env.CPU_DIFFICULTY || 'normal').toLowerCase();
+const CPU_DIFFICULTY_PROFILES = {
+  easy: {
+    delayMinMs: 1300,
+    delayMaxMs: 2200,
+    checkRaiseChance: 0.12,
+    callRaiseChance: 0.08,
+    foldPressureThreshold: 0.42,
+    foldChanceUnderPressure: 0.6,
+    raiseUnitMin: 2,
+    raiseUnitMax: 3,
+  },
+  normal: {
+    delayMinMs: 900,
+    delayMaxMs: 1700,
+    checkRaiseChance: 0.22,
+    callRaiseChance: 0.15,
+    foldPressureThreshold: 0.58,
+    foldChanceUnderPressure: 0.5,
+    raiseUnitMin: 3,
+    raiseUnitMax: 4,
+  },
+  pro: {
+    delayMinMs: 650,
+    delayMaxMs: 1200,
+    checkRaiseChance: 0.28,
+    callRaiseChance: 0.2,
+    foldPressureThreshold: 0.74,
+    foldChanceUnderPressure: 0.38,
+    raiseUnitMin: 4,
+    raiseUnitMax: 6,
+  },
+};
+const CPU_PROFILE = CPU_DIFFICULTY_PROFILES[CPU_DIFFICULTY] || CPU_DIFFICULTY_PROFILES.normal;
 
 
 
 // Helpers
+const isCpuPlayer = (player) =>
+  !!player && typeof player.id === 'string' && player.id.startsWith('cpu:');
+
 const getCurrentPlayers = () =>
-  Object.values(players).map(({ socketId, id, name }) => ({ socketId, id, name }));
+  Object.values(players)
+    .filter((player) => !isCpuPlayer(player))
+    .map(({ socketId, id, name }) => ({ socketId, id, name }));
 
 const getCurrentTables = () =>
   Object.values(tables).map(({ id, name, limit, maxPlayers, players, minBet }) => ({
@@ -51,7 +93,7 @@ const getCurrentTables = () =>
     name,
     limit,
     maxPlayers,
-    currentNumberPlayers: players.length,
+    currentNumberPlayers: players.filter((player) => !isCpuPlayer(player)).length,
     smallBlind: minBet,
     bigBlind: minBet * 2,
   }));
@@ -60,6 +102,132 @@ const getCurrentTables = () =>
 
 // Core
 const init = (socket, io) => {
+  const findFirstEmptySeatId = (table) => {
+    for (let i = 1; i <= table.maxPlayers; i++) {
+      if (!table.seats[i]) {
+        return i;
+      }
+    }
+
+    return null;
+  };
+
+  const buildCpuPlayer = (table) => {
+    const botNumber = Object.values(table.seats).filter((seat) => seat && isCpuPlayer(seat.player)).length + 1;
+    const socketId = `cpu-socket:${table.id}:${Date.now()}:${Math.floor(Math.random() * 1000)}`;
+    return new Player(
+      socketId,
+      `cpu:${table.id}:${botNumber}`,
+      `CPU Bot ${botNumber}`,
+      config.INITIAL_CHIPS_AMOUNT,
+    );
+  };
+
+  const ensureCpuOpponent = (table) => {
+    if (!CPU_MODE_ENABLED || !table) {
+      return;
+    }
+
+    const humanSeats = Object.values(table.seats).filter((seat) => seat && !isCpuPlayer(seat.player));
+    const cpuSeats = Object.values(table.seats).filter((seat) => seat && isCpuPlayer(seat.player));
+
+    if (humanSeats.length === 0) {
+      cpuSeats.forEach((seat) => {
+        delete players[seat.player.socketId];
+        table.removePlayer(seat.player.socketId);
+      });
+      return;
+    }
+
+    if (cpuSeats.length > 0) {
+      return;
+    }
+
+    const emptySeatId = findFirstEmptySeatId(table);
+    if (!emptySeatId) {
+      return;
+    }
+
+    const cpuPlayer = buildCpuPlayer(table);
+    players[cpuPlayer.socketId] = cpuPlayer;
+    table.addPlayer(cpuPlayer);
+    table.sitPlayer(cpuPlayer, emptySeatId, table.limit);
+  };
+
+  const maybeActForCpu = (table) => {
+    if (!CPU_MODE_ENABLED || !table || table.handOver || !table.turn) {
+      return;
+    }
+
+    const seat = table.seats[table.turn];
+    if (!seat || !isCpuPlayer(seat.player)) {
+      return;
+    }
+
+    const randomBetween = (min, max) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+
+    clearTimeout(cpuActionTimers[table.id]);
+    cpuActionTimers[table.id] = setTimeout(() => {
+      const currentSeat = table.seats[table.turn];
+      if (!currentSeat || !isCpuPlayer(currentSeat.player) || table.handOver) {
+        return;
+      }
+
+      const amountToCall = Math.max(0, (table.callAmount || 0) - currentSeat.bet);
+      let result = null;
+
+      if (amountToCall === 0) {
+        const raiseUnits = randomBetween(CPU_PROFILE.raiseUnitMin, CPU_PROFILE.raiseUnitMax);
+        const shouldRaise = Math.random() < CPU_PROFILE.checkRaiseChance && currentSeat.stack > table.minBet * raiseUnits;
+        if (shouldRaise) {
+          const targetRaise = Math.min(
+            currentSeat.stack + currentSeat.bet,
+            Math.max(table.minRaise, currentSeat.bet + table.minBet * raiseUnits),
+          );
+          if (targetRaise > currentSeat.bet) {
+            result = table.handleRaise(currentSeat.player.socketId, targetRaise);
+          }
+        }
+
+        if (!result) {
+          result = table.handleCheck(currentSeat.player.socketId);
+        }
+      } else {
+        const pressure = amountToCall / Math.max(currentSeat.stack, 1);
+        const raiseUnits = randomBetween(CPU_PROFILE.raiseUnitMin, CPU_PROFILE.raiseUnitMax);
+        const shouldFold =
+          pressure > CPU_PROFILE.foldPressureThreshold &&
+          Math.random() < CPU_PROFILE.foldChanceUnderPressure;
+        const shouldRaise =
+          !shouldFold &&
+          Math.random() < CPU_PROFILE.callRaiseChance &&
+          currentSeat.stack > amountToCall + table.minBet * raiseUnits;
+
+        if (shouldFold) {
+          result = table.handleFold(currentSeat.player.socketId);
+        } else if (shouldRaise) {
+          const targetRaise = Math.min(
+            currentSeat.stack + currentSeat.bet,
+            Math.max(table.minRaise, (table.callAmount || 0) + table.minBet * raiseUnits),
+          );
+          if (targetRaise > (table.callAmount || 0)) {
+            result = table.handleRaise(currentSeat.player.socketId, targetRaise);
+          }
+        }
+
+        if (!result) {
+          result = table.handleCall(currentSeat.player.socketId);
+        }
+      }
+
+      if (result) {
+        broadcastToTable(table, result.message);
+        changeTurnAndBroadcast(table, result.seatId);
+      }
+    }, randomBetween(CPU_PROFILE.delayMinMs, CPU_PROFILE.delayMaxMs));
+  };
+
 
   /** LOBBY EVENTS **/
 
@@ -128,7 +296,10 @@ const init = (socket, io) => {
     socket.broadcast.emit(SC_TABLES_UPDATED, getCurrentTables());
 
     if (!findSeatBySocketId(socket.id)) {
-      sitDown(tableId, table.players.length, table.limit);
+      const emptySeatId = findFirstEmptySeatId(table);
+      if (emptySeatId) {
+        sitDown(tableId, emptySeatId, table.limit);
+      }
     }
 
     if (player && table.players.length > 0) {
@@ -148,6 +319,7 @@ const init = (socket, io) => {
     if (seat && player) updatePlayerBankroll(player, seat.stack);
 
     table.removePlayer(socket.id);
+    ensureCpuOpponent(table);
 
     socket.emit(SC_TABLE_LEFT, { tables: getCurrentTables(), tableId });
     socket.broadcast.emit(SC_TABLES_UPDATED, getCurrentTables());
@@ -219,6 +391,7 @@ const init = (socket, io) => {
 
     table.sitPlayer(player, seatId, amount);
     updatePlayerBankroll(player, -amount);
+    ensureCpuOpponent(table);
     broadcastToTable(table, `${player.name} sat down in Seat ${seatId}`);
 
     if (table.activePlayers().length === 2) {
@@ -259,6 +432,7 @@ const init = (socket, io) => {
     }
 
     table.standPlayer(socket.id);
+    ensureCpuOpponent(table);
 
     if (table.activePlayers().length === 1) {
       clearForOnePlayer(table);
@@ -314,11 +488,16 @@ const init = (socket, io) => {
   const removeFromTables = (socketId) => {
     Object.values(tables).forEach((table) => {
       table.removePlayer(socketId);
+      ensureCpuOpponent(table);
     });
   };
 
   const broadcastToTable = (table, message = null, from = null) => {
     for (const player of table.players) {
+      if (isCpuPlayer(player)) {
+        continue;
+      }
+
       const tableView = hideOpponentCards(table, player.socketId);
       io.to(player.socketId).emit(SC_TABLE_UPDATED, {
         table: tableView,
@@ -333,6 +512,7 @@ const init = (socket, io) => {
       table.changeTurn(seatId);
       broadcastToTable(table);
       if (table.handOver) initNewHand(table);
+      maybeActForCpu(table);
     }, 1000);
   };
 
@@ -345,6 +525,7 @@ const init = (socket, io) => {
       table.clearWinMessages();
       table.startHand();
       broadcastToTable(table, '--- New hand started ---');
+      maybeActForCpu(table);
     }, 5000);
   };
 

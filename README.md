@@ -62,6 +62,53 @@ npm start
 - **Client storage** – Tokens are pushed into Axios’ default headers via `client/src/helpers/setAuthToken.js`. Persist them in `localStorage`/`sessionStorage` from your auth screen and call `setAuthToken(token)` on boot.
 - **Protected routes** – `middleware/auth.js` expects the token in the `x-auth-token` header and injects `req.user`. Use the middleware on any route that needs authenticated identity.
 
+### Runtime Environment
+
+Root `.env` (backend):
+
+- `CPU_MODE=true|false`
+- `CPU_DIFFICULTY=easy|normal|pro`
+
+Client `.env` (inside `client/`):
+
+- `REACT_APP_SERVER_URI=http://localhost:5001` (optional override)
+
+Notes:
+
+- CPU behavior defaults to `normal` when `CPU_DIFFICULTY` is missing or invalid.
+
+## Solana Wallet SDK Setup
+
+The auth page uses Solana Wallet Adapter SDK with built-in wallet selection modal.
+Supported adapters in this project include:
+
+- Phantom
+- Solflare
+
+No WalletConnect project id is required for this flow.
+
+## Multiplayer QA
+
+Run a local multi-user smoke test from repo root:
+
+```bash
+npm run smoke:multiuser
+```
+
+Optional tuning:
+
+```bash
+SMOKE_PLAYERS=5 SMOKE_BUY_IN=1500 SMOKE_DURATION_MS=30000 npm run smoke:multiuser
+```
+
+The script reports:
+
+- table updates received
+- approximate hand starts
+- number of actions sent
+
+It exits with non-zero status if no actions were sent.
+
 ## Contributing Guidelines
 
 ### Pre-PR Checklist
