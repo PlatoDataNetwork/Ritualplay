@@ -2,14 +2,6 @@
   "version": 2,
   "buildCommand": "npm install --prefix client && npm run build --prefix client",
   "outputDirectory": "client/build",
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs@20.x"
-    },
-    "api/[...slug].js": {
-      "runtime": "nodejs@20.x"
-    }
-  },
   "routes": [
     {
       "src": "/api$",
