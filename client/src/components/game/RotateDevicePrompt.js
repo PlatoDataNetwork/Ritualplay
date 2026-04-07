@@ -1,8 +1,8 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import Text from '../typography/Text'
 import rotateGif from '../../assets/game/rotate.gif'
 import styled from 'styled-components'
- 
+
 
 const Wrapper = styled.div`
   display: none;
@@ -27,7 +27,7 @@ const Wrapper = styled.div`
 `
 
 export const RotateDevicePrompt = () => {
-   
+
   return (
     <Wrapper>
       <img

@@ -1,6 +1,6 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import styled from 'styled-components'
- 
+
 import ChipsAmountPill from './ChipsAmountPill'
 import { InfoPill } from './InfoPill'
 
@@ -15,7 +15,7 @@ const Wrapper = styled.div`
 `
 
 export const GameStateInfo = ({ currentTable }) => {
-   
+
 
   return (
     <Wrapper>

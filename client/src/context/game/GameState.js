@@ -16,7 +16,6 @@ import {
 } from '../../game/actions'
 import socketContext from '../websocket/socketContext'
 import GameContext from './gameContext'
-import globalContext from '../global/globalContext'
 
 const GameState = ({ children }) => {
   const { socket } = useContext(socketContext)
@@ -56,20 +55,17 @@ const GameState = ({ children }) => {
       window.addEventListener('unload', leaveTable)
       window.addEventListener('close', leaveTable)
 
-      socket.on(SC_TABLE_UPDATED, ({ table, message, from }) => {
-        console.log(SC_TABLE_UPDATED, { table, message, from })
+      socket.on(SC_TABLE_UPDATED, ({ table, message }) => {
         setCurrentTable(table)
         message && addMessage(message)
       })
 
-      socket.on(SC_TABLE_JOINED, ({ tables, tableId }) => {
-        console.log(SC_TABLE_JOINED, { tables, tableId })
+      socket.on(SC_TABLE_JOINED, ({ tables }) => {
         if (tables[0].currentNumberPlayers > 0)
           setSeatId(tables[0].currentNumberPlayers)
       })
 
-      socket.on(SC_TABLE_LEFT, ({ tables, tableId }) => {
-        console.log(SC_TABLE_LEFT, { tables, tableId })
+      socket.on(SC_TABLE_LEFT, () => {
         setCurrentTable(null)
         setMessages([])
       })
@@ -81,7 +77,6 @@ const GameState = ({ children }) => {
   }, [socket])
 
   const joinTable = (tableId) => {
-    console.log(CS_JOIN_TABLE, tableId)
     socket.emit(CS_JOIN_TABLE, tableId)
   }
 
@@ -96,13 +91,11 @@ const GameState = ({ children }) => {
 
   const sitDown = (tableId, seatId, amount) => {
     socket.emit(CS_SIT_DOWN, { tableId, seatId, amount })
-    console.log(CS_SIT_DOWN, { tableId, seatId, amount })
     setSeatId(seatId)
   }
 
   const rebuy = (tableId, seatId, amount) => {
     socket.emit(CS_REBUY, { tableId, seatId, amount })
-    console.log(CS_REBUY, { tableId, seatId, amount })
   }
 
   const standUp = () => {
@@ -114,7 +107,6 @@ const GameState = ({ children }) => {
 
   const addMessage = (message) => {
     setMessages((prevMessages) => [...prevMessages, message])
-    console.log(message)
   }
 
   const fold = () => {

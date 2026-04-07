@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import Container from '../components/layout/Container';
 import CenteredBlock from '../components/layout/CenteredBlock';
 import Heading from '../components/typography/Heading';
@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import useScrollToTopOnPageLoad from '../hooks/useScrollToTopOnPageLoad';
 
 const NotFoundPage = () => {
-   
+
   useScrollToTopOnPageLoad();
 
   return (

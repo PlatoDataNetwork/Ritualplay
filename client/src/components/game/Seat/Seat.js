@@ -1,43 +1,20 @@
-import React, { useContext, useEffect } from 'react'
-import Button from '../../buttons/Button'
-import modalContext from '../../../context/modal/modalContext'
-import globalContext from '../../../context/global/globalContext'
-import { ButtonGroup } from '../../forms/ButtonGroup'
-import { Form } from '../../forms/Form'
-import { FormGroup } from '../../forms/FormGroup'
-import { Input } from '../../forms/Input'
-import gameContext from '../../../context/game/gameContext'
+import React from 'react'
 import { PositionedUISlot } from '../PositionedUISlot'
 import { LastAction } from '../LastAction'
 import PokerCard from '../PokerCard'
 import ChipsAmountPill from '../ChipsAmountPill'
-import ColoredText from '../../typography/ColoredText'
-import PokerChip from '../../icons/PokerChip'
 import { EmptySeat } from './EmptySeat'
 import { OccupiedSeat } from './OccupiedSeat'
 import { Hand } from '../Hand'
-import { NameTag } from '../NameTag'
 import Markdown from 'react-remarkable'
 import DealerButton from '../../icons/DealerButton'
 import SmallBlindButton from '../../icons/SmallBlindButton'
 import BigBlindButton from '../../icons/BigBlindButton'
 import { StyledSeat } from './StyledSeat'
-import { convertOmittedAddress } from '../../../helpers/common'
 import './Seat.scss'
 
-export const Seat = ({ currentTable, seatNumber, sitDown }) => {
-  const { chipsAmount } = useContext(globalContext)
-  const { standUp, seatId, rebuy } = useContext(gameContext)
-   
-
+export const Seat = ({ currentTable, seatNumber }) => {
   const seat = currentTable.seats[seatNumber]
-  const maxBuyin = currentTable.limit
-  const minBuyIn = currentTable.minBet * 2 * 10
-
-  useEffect(() => {
-    console.log(currentTable, seatId, seatNumber, currentTable.seats[seatNumber])
-    // eslint-disable-next-line
-  }, [currentTable])
 
   const gameActions = {
     CS_CALL: {
@@ -51,7 +28,7 @@ export const Seat = ({ currentTable, seatNumber, sitDown }) => {
     CS_CHECK: {
       text: 'Check',
       bgColor: '#48ff52'
-    },    
+    },
     CS_RAISE: {
       text: 'Raise',
       bgColor: '#179ddc'
@@ -131,14 +108,14 @@ export const Seat = ({ currentTable, seatNumber, sitDown }) => {
               top="-55px"
               left="-93px"
               origin="top left"
-              style={{ zIndex: '55' }}            
+              style={{ zIndex: '55' }}
             >
               <BigBlindButton />
             </PositionedUISlot>
           )}
 
           {currentTable.smallBlind === seatNumber && (
-            <PositionedUISlot            
+            <PositionedUISlot
               top="-55px"
               left="-93px"
               origin="top left"
