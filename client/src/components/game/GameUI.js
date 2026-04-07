@@ -1,5 +1,5 @@
-import React, { useContext } from 'react'
- 
+import React from 'react'
+
 import Button from '../buttons/Button'
 import { BetSlider } from './Betslider/BetSlider'
 import { UIWrapper } from './UIWrapper'
@@ -16,7 +16,7 @@ export const GameUI = ({
   check,
   call,
 }) => {
-   
+
 
   return (
     <UIWrapper style={{ display: 'flex' }}>
@@ -78,7 +78,7 @@ export const GameUI = ({
               </Button>
             </Col>
             <Col
-              sm={{span: 7, offset: 1}}
+              sm={{ span: 7, offset: 1 }}
               style={{
                 display: 'flex',
                 alignItems: 'center',

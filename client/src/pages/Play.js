@@ -16,23 +16,7 @@ import { GameStateInfo } from '../components/game/GameStateInfo'
 import BrandingImage from '../components/game/BrandingImage'
 import PokerCard from '../components/game/PokerCard'
 import background from '../assets/img/background.png'
-import Swal from 'sweetalert2'
 import './Play.scss';
-
-const toastMixin = Swal.mixin({
-  toast: true,
-  icon: 'success',
-  title: 'General Title',
-  animation: false,
-  position: 'top-right',
-  showConfirmButton: false,
-  timer: 3000,
-  timerProgressBar: true,
-  didOpen: (toast) => {
-    toast.addEventListener('mouseenter', Swal.stopTimer)
-    toast.addEventListener('mouseleave', Swal.resumeTimer)
-  },
-})
 
 const Play = () => {
   const navigate = useNavigate()
@@ -51,23 +35,20 @@ const Play = () => {
     call,
     raise,
   } = useContext(gameContext)
-   
+
 
   const [bet, setBet] = useState(0)
 
 
   useEffect(() => {
-    console.log(socket, walletAddress)
-    if(!socket){
-      navigate("/")
+    if (!socket || !walletAddress) {
+      navigate('/')
+      return
     }
 
-    // !walletAddress && navigate("/")
-    socket && walletAddress && joinTable(1)
+    joinTable(1)
 
-    if(socket){
-      return () => leaveTable()
-    }
+    return () => leaveTable()
     // eslint-disable-next-line
   }, [socket, walletAddress])
 
@@ -76,8 +57,8 @@ const Play = () => {
       (currentTable.callAmount > currentTable.minBet
         ? setBet(currentTable.callAmount)
         : currentTable.pot > 0
-        ? setBet(currentTable.minRaise)
-        : setBet(currentTable.minBet))
+          ? setBet(currentTable.minRaise)
+          : setBet(currentTable.minBet))
   }, [currentTable])
 
   useEffect(() => {
@@ -206,7 +187,7 @@ const Play = () => {
                       <InfoPill>
                         {
                           currentTable.winMessages[
-                            currentTable.winMessages.length - 1
+                          currentTable.winMessages.length - 1
                           ]
                         }
                       </InfoPill>

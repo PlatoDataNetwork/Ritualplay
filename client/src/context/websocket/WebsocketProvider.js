@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react'
 import SocketContext from './socketContext'
 import io from 'socket.io-client'
-import { useNavigate } from 'react-router-dom'
 import {
   CS_DISCONNECT,
-  CS_FETCH_LOBBY_INFO,
   SC_PLAYERS_UPDATED,
   SC_RECEIVE_LOBBY_INFO,
   SC_TABLES_UPDATED,
@@ -14,7 +12,6 @@ import config from '../../clientConfig'
 
 const WebSocketProvider = ({ children }) => {
   const { setTables, setPlayers, setChipsAmount } = useContext(globalContext)
-  const navigate = useNavigate()
 
   const [socket, setSocket] = useState(null)
   const [socketId, setSocketId] = useState(null)
@@ -27,8 +24,7 @@ const WebSocketProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    console.log('socket context')
-    const webSocket = socket || connect()
+    socket || connect()
 
     return () => cleanUp()
     // eslint-disable-next-line
@@ -59,7 +55,6 @@ const WebSocketProvider = ({ children }) => {
     })
 
     socket.on(SC_RECEIVE_LOBBY_INFO, ({ tables, players, socketId, amount }) => {
-      console.log(SC_RECEIVE_LOBBY_INFO, tables, players, socketId)
       setSocketId(socketId)
       setChipsAmount(amount)
       setTables(tables)
@@ -67,12 +62,10 @@ const WebSocketProvider = ({ children }) => {
     })
 
     socket.on(SC_PLAYERS_UPDATED, (players) => {
-      console.log(SC_PLAYERS_UPDATED, players)
       setPlayers(players)
     })
 
     socket.on(SC_TABLES_UPDATED, (tables) => {
-      console.log(SC_TABLES_UPDATED, tables)
       setTables(tables)
     })
 

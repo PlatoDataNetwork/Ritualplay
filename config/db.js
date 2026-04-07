@@ -3,12 +3,8 @@ const config = require('../config');
 
 const connectDB = async () => {
   try {
-    const db = await mongoose.connect(config.MONGO_URI, {
-      useNewUrlParser: true,
-      useCreateIndex: true,
-      useFindAndModify: false,
-      useUnifiedTopology: true,
-    });
+    // mongoose 6+ removed the legacy option flags; connect() works with defaults
+    const db = await mongoose.connect(config.MONGO_URI);
     console.log('Successfully connected to MongoDB!');
 
     return db;
