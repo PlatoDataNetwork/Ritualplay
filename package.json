@@ -3,6 +3,7 @@
     "main": "./server.js",
     "scripts": {
         "dev:server": "nodemon ./server",
+        "start": "node ./server",
         "start:backend": "node ./server",
         "start:frontend": "npm install --prefix client && npm start --prefix client",
         "build:client": "npm run build --prefix client",
