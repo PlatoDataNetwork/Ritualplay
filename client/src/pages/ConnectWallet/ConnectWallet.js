@@ -143,6 +143,11 @@ const ConnectWallet = () => {
       return
     }
 
+    if (!config.hasSocketServerConfigured) {
+      setError('Game server is not configured. Set REACT_APP_SERVER_URI in Vercel env vars.')
+      return
+    }
+
     const walletAddress = publicKey.toBase58()
     if (!walletAddress || lastHandledAddressRef.current === walletAddress) {
       return

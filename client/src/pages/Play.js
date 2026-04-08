@@ -17,6 +17,7 @@ import { GameUI } from '../components/game/GameUI'
 import { GameStateInfo } from '../components/game/GameStateInfo'
 import BrandingImage from '../components/game/BrandingImage'
 import PokerCard from '../components/game/PokerCard'
+import config from '../clientConfig'
 import background from '../assets/img/background.png'
 import './Play.scss';
 
@@ -117,10 +118,6 @@ const Play = () => {
     const timer = setTimeout(() => setDepositNotice(''), 8000)
     return () => clearTimeout(timer)
   }, [depositNotice])
-
-  const handleOpenProfile = () => {
-    navigate('/dashboard')
-  }
 
   const handleLeave = async () => {
     if (isLeaving) {
@@ -229,6 +226,78 @@ const Play = () => {
         }}
         className="play-area"
       >
+        {!config.hasSocketServerConfigured && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: '50% auto auto 50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(560px, calc(100vw - 2rem))',
+              zIndex: 60,
+              padding: '1.5rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(8, 14, 22, 0.92)',
+              color: '#eef5f7',
+              textAlign: 'center',
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Game server not configured</h2>
+            <p style={{ marginBottom: '0.75rem', color: 'rgba(238, 245, 247, 0.82)' }}>
+              The frontend is deployed, but realtime poker needs a persistent Socket.IO backend.
+            </p>
+            <p style={{ marginBottom: 0, color: '#f6c177' }}>
+              Set REACT_APP_SERVER_URI in Vercel to your deployed backend URL.
+            </p>
+          </div>
+        )}
+
+        {config.hasSocketServerConfigured && !socket && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: '50% auto auto 50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(520px, calc(100vw - 2rem))',
+              zIndex: 60,
+              padding: '1.25rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(8, 14, 22, 0.9)',
+              color: '#eef5f7',
+              textAlign: 'center',
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Connecting to game server</h2>
+            <p style={{ marginBottom: 0, color: 'rgba(238, 245, 247, 0.82)' }}>
+              Waiting for the Socket.IO server to respond.
+            </p>
+          </div>
+        )}
+
+        {config.hasSocketServerConfigured && socket && !currentTable && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: '50% auto auto 50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(520px, calc(100vw - 2rem))',
+              zIndex: 60,
+              padding: '1.25rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(8, 14, 22, 0.9)',
+              color: '#eef5f7',
+              textAlign: 'center',
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>Loading table</h2>
+            <p style={{ marginBottom: 0, color: 'rgba(238, 245, 247, 0.82)' }}>
+              Connected to the server. Waiting for lobby and table state.
+            </p>
+          </div>
+        )}
+
         {currentTable && (
           <>
             <PositionedUISlot
@@ -249,9 +318,6 @@ const Play = () => {
             >
               <Button small secondary onClick={handleDepositOpen}>
                 Deposit
-              </Button>
-              <Button small secondary onClick={handleOpenProfile}>
-                Profile
               </Button>
             </PositionedUISlot>
           </>
