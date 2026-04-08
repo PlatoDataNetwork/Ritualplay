@@ -1,10 +1,14 @@
+const isProduction = process.env.NODE_ENV === 'production';
+const productionSocketURI = (process.env.REACT_APP_SERVER_URI || '').trim();
+
 const config = {
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction,
+  hasSocketServerConfigured: !isProduction || Boolean(productionSocketURI),
   contentfulSpaceId: process.env.REACT_APP_CONTENTFUL_SPACE_ID,
   contentfulAccessToken: process.env.REACT_APP_CONTENTFUL_ACCESS_TOKEN,
   socketURI:
-    process.env.NODE_ENV === 'production'
-      ? process.env.REACT_APP_SERVER_URI || window.location.origin
+    isProduction
+      ? productionSocketURI || null
       : `http://${window.location.hostname}:5001/`,
 };
 

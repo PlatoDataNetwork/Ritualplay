@@ -28,7 +28,7 @@ const WebSocketProvider = ({ children }) => {
   }, [])
 
   useEffect(() => {
-    if (!socket) {
+    if (!socket && config.socketURI) {
       reconnect()
     }
     // eslint-disable-next-line
@@ -50,6 +50,10 @@ const WebSocketProvider = ({ children }) => {
   }
 
   function reconnect() {
+    if (!config.socketURI) {
+      return null
+    }
+
     if (window.socket && window.socket.connected) {
       setSocket(window.socket)
       return window.socket
@@ -65,9 +69,15 @@ const WebSocketProvider = ({ children }) => {
   }
 
   function connect() {
+    if (!config.socketURI) {
+      return null
+    }
+
     const socket = io(config.socketURI, {
       transports: ['websocket'],
       upgrade: false,
+      reconnectionAttempts: 5,
+      timeout: 5000,
     })
     registerCallbacks(socket)
     window.socket = socket

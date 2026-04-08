@@ -6,6 +6,7 @@ import { useWallet } from '@solana/wallet-adapter-react/lib/cjs'
 import globalContext from './../../context/global/globalContext'
 import socketContext from '../../context/websocket/socketContext'
 import { CS_FETCH_LOBBY_INFO } from '../../game/actions'
+import config from '../../clientConfig'
 import tableImage from '../../assets/game/table.webp'
 import backgroundImage from '../../assets/img/background.png'
 import cardBackImage from '../../assets/game/card_back.png'
@@ -120,7 +121,9 @@ const ConnectWallet = () => {
   useEffect(() => {
     if (!socket) {
       setSocketReady(false)
-      reconnect()
+      if (config.socketURI) {
+        reconnect()
+      }
       return
     }
 
@@ -148,11 +151,11 @@ const ConnectWallet = () => {
     lastHandledAddressRef.current = walletAddress
     setWalletAddress(walletAddress)
     setError('')
-    navigate('/dashboard')
+    navigate('/play')
   }, [connected, navigate, publicKey, setWalletAddress])
 
   useEffect(() => {
-    if (!socket || !socketReady || !connected || !publicKey) {
+    if (!config.socketURI || !socket || !socketReady || !connected || !publicKey) {
       return
     }
 
@@ -175,6 +178,11 @@ const ConnectWallet = () => {
   }, [connected, location.search, publicKey, socket, socketReady])
 
   useEffect(() => {
+    if (connected && !config.hasSocketServerConfigured) {
+      setError('Game server is not configured. Set REACT_APP_SERVER_URI in Vercel env vars.')
+      return
+    }
+
     if (connected && !socketReady) {
       setError('Connecting to server...')
       return

@@ -12,7 +12,6 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<ConnectWallet />} />
-      <Route path="/dashboard" element={<Play />} />
       <Route path="/play" element={<Play />} />
       <Route element={<NotFoundPage />} />
     </Routes>
