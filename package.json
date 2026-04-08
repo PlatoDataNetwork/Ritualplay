@@ -6,6 +6,7 @@
         "start:backend": "node ./server",
         "start:frontend": "npm install --prefix client && npm start --prefix client",
         "build:client": "npm run build --prefix client",
+        "vercel-build": "npm install --prefix client && npm run build --prefix client",
         "dev": "npx --yes concurrently \"npm run start:backend\" \"npm run start:frontend\"",
         "smoke:multiuser": "node ./scripts/multiuser-smoke.js",
         "eject": "react-scripts eject",
