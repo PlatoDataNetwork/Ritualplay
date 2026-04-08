@@ -1,7 +1,7 @@
 /node_modules
-/client/node_modules
-/client/build
-/client/dist
+/frontend/node_modules
+/frontend/build
+/frontend/dist
 /server/node_modules
 /server/dist
 /server/build

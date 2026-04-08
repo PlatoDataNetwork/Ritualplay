@@ -5,8 +5,8 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "npm install --prefix client && npm run build --prefix client",
-        "distDir": "client/build"
+        "buildCommand": "npm install --prefix frontend && npm run build --prefix frontend",
+        "distDir": "frontend/build"
       }
     },
     {

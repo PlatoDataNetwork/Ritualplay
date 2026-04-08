@@ -5,14 +5,15 @@
         "dev:server": "nodemon ./server",
         "start": "node ./server",
         "start:backend": "node ./server",
-        "start:frontend": "npm install --prefix client && npm start --prefix client",
-        "build:client": "npm run build --prefix client",
-        "vercel-build": "npm install --prefix client && npm run build --prefix client",
+        "start:frontend": "npm install --prefix frontend && npm start --prefix frontend",
+        "build:frontend": "npm run build --prefix frontend",
+        "build:client": "npm run build:frontend",
+        "vercel-build": "npm install --prefix frontend && npm run build --prefix frontend",
         "dev": "npx --yes concurrently \"npm run start:backend\" \"npm run start:frontend\"",
         "smoke:multiuser": "node ./scripts/multiuser-smoke.js",
         "eject": "react-scripts eject",
         "prepare": "node -e \"console.log('prepare: no-op')\"",
-        "test": "npm --prefix client test --"
+        "test": "npm --prefix frontend test --"
     },
     "private": "true",
     "dependencies": {

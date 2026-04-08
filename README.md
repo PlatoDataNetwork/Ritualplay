@@ -43,23 +43,36 @@
 git clone <git-repository-url>
 cd Ritualplay
 
-# Install root dependencies
+# Install backend dependencies
 npm install
 
-# Go to the client folder and install its dependencies
-cd client
+# Go to the frontend folder and install its dependencies
+cd frontend
 npm install
 
-# Start
-npm start
+# Start the backend from the repo root
+cd ..
+npm run start:backend
+
+# Start the frontend in a second terminal
+npm run start:frontend
 ```
 
 ---
 
+## Project Structure
+
+- `frontend/` - React application deployed to Vercel
+- repo root - Express + Socket.IO backend deployed to Railway
+- `server.js` - persistent backend entry point for realtime poker
+- `app.js` - shared Express app used by server/runtime wrappers
+- `socket/` - realtime poker game state and Socket.IO event handling
+- `routes/`, `controllers/`, `middleware/`, `models/`, `game/` - backend modules
+
 ## Config
 
 - **JWT issuance** – `POST /api/auth` in `controllers/auth.js` signs a JWT with `config.JWT_SECRET_KEY` (see `SESSION_EXPIRES_IN`). The payload only contains `user.id` so you can safely extend it.
-- **Client storage** – Tokens are pushed into Axios’ default headers via `client/src/helpers/setAuthToken.js`. Persist them in `localStorage`/`sessionStorage` from your auth screen and call `setAuthToken(token)` on boot.
+- **Client storage** – Tokens are pushed into Axios’ default headers via `frontend/src/helpers/setAuthToken.js`. Persist them in `localStorage`/`sessionStorage` from your auth screen and call `setAuthToken(token)` on boot.
 - **Protected routes** – `middleware/auth.js` expects the token in the `x-auth-token` header and injects `req.user`. Use the middleware on any route that needs authenticated identity.
 
 ### Runtime Environment
@@ -69,17 +82,75 @@ Root `.env` (backend):
 - `CPU_MODE=true|false`
 - `CPU_DIFFICULTY=easy|normal|pro`
 
-Client `.env` (inside `client/`):
+Frontend `.env` (inside `frontend/`):
 
 - `REACT_APP_SERVER_URI=http://localhost:5001` (optional override)
 
-## Vercel Deployment
+## Deployment Overview
 
-This repo now includes a root `vercel.json` that makes Vercel serve the React app from `client/build` at `/` instead of serving the Express root route.
+Use two hosts:
+
+- Backend on Railway using the repo root
+- Frontend on Vercel using the same repo root plus `vercel.json`
+
+This split is required because the poker backend uses a persistent Socket.IO server and in-memory game state.
+
+## Railway Backend Deployment
+
+Deploy the backend from the repository root. Do not upload only selected files if you can avoid it; connect the full repo and let Railway use the root directory.
+
+Files Railway needs from the repo root:
+
+- `package.json`
+- `package-lock.json`
+- `railway.json`
+- `server.js`
+- `app.js`
+- `config.js`
+- `routes/`
+- `controllers/`
+- `middleware/`
+- `socket/`
+- `game/`
+- `models/`
+- `utils/`
+
+Railway steps:
+
+```bash
+# From the repo root
+npx @railway/cli login
+npx @railway/cli init
+npx @railway/cli up
+```
+
+Important Railway settings:
+
+- Start command: `npm start`
+- Health check path: `/healthz`
+- Root directory: repo root
+
+Recommended Railway environment variables:
+
+- `NODE_ENV=production`
+- `PORT` is provided by Railway automatically
+- `CPU_MODE=true`
+- `CPU_DIFFICULTY=normal`
+- Any database/auth secrets your backend needs
+
+After deployment, copy the public Railway backend URL. Example:
+
+```bash
+https://ritualplay-backend.up.railway.app
+```
+
+## Vercel Frontend Deployment
+
+The repo includes a root `vercel.json` that makes Vercel build and serve the React app from `frontend/build` at `/`.
 
 What is configured:
 
-- `vercel.json` builds the client with `npm install --prefix client && npm run build --prefix client`
+- `vercel.json` builds the frontend with `npm install --prefix frontend && npm run build --prefix frontend`
 - `/` and other non-API routes resolve to the React SPA
 - `/api/*` resolves to a Vercel serverless function backed by the Express app
 
@@ -89,14 +160,34 @@ Required Vercel environment variables:
 
 Recommended value:
 
-- If you deploy the backend somewhere else: set `REACT_APP_SERVER_URI` to that public backend URL.
-- If you only want the React site and basic same-origin API handling: you can omit it and the client falls back to the current origin.
+- Set `REACT_APP_SERVER_URI` to your Railway backend URL.
+
+Example:
+
+```bash
+REACT_APP_SERVER_URI=https://ritualplay-backend.up.railway.app
+```
+
+Recommended Vercel settings:
+
+- Framework preset: `Other`
+- Root directory: repo root
+- Build settings: handled by `vercel.json`
 
 Important limitation:
 
 - Vercel does not support long-running Socket.IO game servers in the same way as a persistent Node host.
-- Your poker realtime backend should be deployed to a persistent service such as Railway, Render, Fly.io, EC2, or a VPS.
-- For full gameplay on Vercel frontend, set `REACT_APP_SERVER_URI` to that separate backend URL.
+- Your poker realtime backend must stay on Railway, Render, Fly.io, EC2, or another persistent host.
+- For full gameplay on Vercel frontend, set `REACT_APP_SERVER_URI` to that backend URL.
+
+## End-to-End Deploy Checklist
+
+1. Deploy backend from repo root to Railway.
+2. Copy the Railway public URL.
+3. Add `REACT_APP_SERVER_URI` in Vercel project environment variables.
+4. Redeploy Vercel.
+5. Open the Vercel frontend and verify wallet connect reaches `/play`.
+6. Verify the frontend connects to the Railway Socket.IO backend.
 
 Notes:
 
