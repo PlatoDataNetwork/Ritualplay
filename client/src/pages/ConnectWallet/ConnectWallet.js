@@ -115,6 +115,7 @@ const ConnectWallet = () => {
   const [socketReady, setSocketReady] = useState(false)
   const [error, setError] = useState('')
   const lastHandledAddressRef = useRef('')
+  const lobbySyncedAddressRef = useRef('')
 
   useEffect(() => {
     if (!socket) {
@@ -135,7 +136,7 @@ const ConnectWallet = () => {
   }, [reconnect, socket])
 
   useEffect(() => {
-    if (!socket || !socketReady || !connected || !publicKey) {
+    if (!connected || !publicKey) {
       return
     }
 
@@ -144,24 +145,37 @@ const ConnectWallet = () => {
       return
     }
 
+    lastHandledAddressRef.current = walletAddress
+    setWalletAddress(walletAddress)
+    setError('')
+    navigate('/dashboard')
+  }, [connected, navigate, publicKey, setWalletAddress])
+
+  useEffect(() => {
+    if (!socket || !socketReady || !connected || !publicKey) {
+      return
+    }
+
+    const walletAddress = publicKey.toBase58()
+    if (!walletAddress || lobbySyncedAddressRef.current === walletAddress) {
+      return
+    }
+
     const query = new URLSearchParams(location.search)
     const gameId = query.get('gameId') || 'main'
     const username = query.get('username') || `Player-${walletAddress.slice(0, 4)}${walletAddress.slice(-4)}`
 
-    lastHandledAddressRef.current = walletAddress
-    setWalletAddress(walletAddress)
-    setError('')
     socket.emit(CS_FETCH_LOBBY_INFO, {
       walletAddress,
       socketId: socket.id,
       gameId,
       username,
     })
-    navigate('/play')
-  }, [connected, location.search, navigate, publicKey, setWalletAddress, socket, socketReady])
+    lobbySyncedAddressRef.current = walletAddress
+  }, [connected, location.search, publicKey, socket, socketReady])
 
   useEffect(() => {
-    if (!socketReady) {
+    if (connected && !socketReady) {
       setError('Connecting to server...')
       return
     }
